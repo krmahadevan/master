@@ -1,6 +1,7 @@
 package com.rationaleemotions.master.api;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/master")
 @RequiredArgsConstructor
+@Slf4j
 public class IngressController {
 
     private final RestClient client;
@@ -24,9 +26,12 @@ public class IngressController {
     public ResponseEntity<GreetingOutBound> greeting() {
         List<String> userAgent = new ArrayList<>();
         GreetingInBound reply = client.get()
-                .uri("/worker/greet").exchange((clientRequest, clientResponse) -> {
+                .uri("/worker/greet")
+                .header("User-Agent", "IntelliJ HTTP Client/IntelliJ IDEA 2024.1")
+                .exchange((clientRequest, clientResponse) -> {
                     HttpHeaders headers = clientResponse.getHeaders();
                     userAgent.addAll(headers.getOrEmpty("User-Agent"));
+                    log.info("Found user-agent: {}", userAgent);
                     return Objects.requireNonNull(clientResponse.bodyTo(GreetingInBound.class));
                 });
 
