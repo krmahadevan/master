@@ -24,24 +24,23 @@ public class IngressController {
 
     @GetMapping(path = "/greet", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GreetingOutBound> greeting() {
-        List<String> userAgent = new ArrayList<>();
+        List<String> dragonWarrior = new ArrayList<>();
         GreetingInBound reply = client.get()
                 .uri("/worker/greet")
-                .header("User-Agent", "IntelliJ HTTP Client/IntelliJ IDEA 2024.1")
                 .exchange((clientRequest, clientResponse) -> {
                     HttpHeaders headers = clientResponse.getHeaders();
-                    userAgent.addAll(headers.getOrEmpty("User-Agent"));
-                    log.info("Found user-agent: {}", userAgent);
+                    dragonWarrior.addAll(headers.getOrEmpty("dragon-warrior"));
+                    log.info("Found dragon-warrior: {}", dragonWarrior);
                     return Objects.requireNonNull(clientResponse.bodyTo(GreetingInBound.class));
                 });
 
         return ResponseEntity.ok(new GreetingOutBound("Hello " + reply.message(),
-                String.join(", ", userAgent)));
+                String.join(", ", dragonWarrior)));
     }
 
     public record GreetingInBound(String message) {
     }
 
-    public record GreetingOutBound(String message, String userAgent) {
+    public record GreetingOutBound(String message, String dragonWarrior) {
     }
 }

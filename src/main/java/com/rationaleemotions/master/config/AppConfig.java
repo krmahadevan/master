@@ -22,7 +22,8 @@ public class AppConfig {
 
     @Bean
     public RestClient restClient() {
-        RestClient.Builder builder = RestClient.builder();
+        RestClient.Builder builder = RestClient.builder()
+                .defaultHeader("dragon-warrior", "kungfu-panda");
         Optional.ofNullable(System.getProperty("http.proxyHost"))
                 .ifPresent(
                         host -> {
