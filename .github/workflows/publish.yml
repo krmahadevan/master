@@ -25,6 +25,7 @@ jobs:
       - name: Build fat jar
         run: mvn clean package
   build-and-push-image:
+    needs: [ build-jar ]
     runs-on: ubuntu-latest
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
