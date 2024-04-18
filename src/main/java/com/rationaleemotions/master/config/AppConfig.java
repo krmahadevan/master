@@ -1,5 +1,6 @@
 package com.rationaleemotions.master.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,8 +10,11 @@ import org.springframework.web.client.RestClient;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.SocketAddress;
+import java.util.Objects;
+import java.util.Optional;
 
 @Configuration
+@Slf4j
 public class AppConfig {
 
     @Value("${application.worker.address}")
@@ -18,16 +22,19 @@ public class AppConfig {
 
     @Bean
     public RestClient restClient() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        SocketAddress address = new InetSocketAddress(
-                System.getProperty("http.proxyHost"),
-                Integer.parseInt(System.getProperty("http.proxyPort"))
-        );
-        Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
-        factory.setProxy(proxy);
-        return RestClient.builder()
-                .requestFactory(factory)
-                .baseUrl(workerAddress).build();
+        RestClient.Builder builder = RestClient.builder();
+        Optional.ofNullable(System.getProperty("http.proxyHost"))
+                .ifPresent(
+                        host -> {
+                            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                            int port = Integer.parseInt(Objects.requireNonNull(System.getProperty("http.proxyPort")));
+                            SocketAddress address = new InetSocketAddress(host, port);
+                            Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
+                            factory.setProxy(proxy);
+                            builder.requestFactory(factory);
+                        }
+                );
+        return builder.baseUrl(workerAddress).build();
     }
 
 }
