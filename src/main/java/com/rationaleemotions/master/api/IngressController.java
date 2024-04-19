@@ -1,17 +1,15 @@
 package com.rationaleemotions.master.api;
 
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -20,27 +18,39 @@ import java.util.Objects;
 @Slf4j
 public class IngressController {
 
-    private final RestClient client;
+    public static final String PATH = "/worker/greet";
+    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     @GetMapping(path = "/greet", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<GreetingOutBound> greeting() {
-        List<String> dragonWarrior = new ArrayList<>();
-        GreetingInBound reply = client.get()
-                .uri("/worker/greet")
-                .exchange((clientRequest, clientResponse) -> {
-                    HttpHeaders headers = clientResponse.getHeaders();
-                    dragonWarrior.addAll(headers.getOrEmpty("dragon-warrior"));
-                    log.info("Found dragon-warrior: {}", dragonWarrior);
-                    return Objects.requireNonNull(clientResponse.bodyTo(GreetingInBound.class));
-                });
+    public ResponseEntity<GreetingOutBound> greeting(@RequestHeader HttpHeaders headers) {
+        boolean useRestClient = !headers.getOrEmpty("rest-client").isEmpty();
+        ResponseEntity<Greeting> repliedEntity = useRestClient ? greetUsingRestClient() : greetUsingRestTemplate();
 
-        return ResponseEntity.ok(new GreetingOutBound("Hello " + reply.message(),
-                String.join(", ", dragonWarrior)));
+        Greeting reply = Objects.requireNonNull(repliedEntity.getBody());
+
+        log.info("Greeting: {}", reply);
+        HttpHeaders repliedHeaders = repliedEntity.getHeaders();
+
+        GreetingOutBound outBound =
+                new GreetingOutBound("Hello " + reply.message(), repliedHeaders.toString());
+
+        return ResponseEntity.ok().headers(repliedHeaders).body(outBound);
     }
 
-    public record GreetingInBound(String message) {
+    private ResponseEntity<Greeting> greetUsingRestClient() {
+        log.info("Greeting using RestClient");
+        return restClient.get().uri(PATH).retrieve().toEntity(Greeting.class);
+    }
+
+    private ResponseEntity<Greeting> greetUsingRestTemplate() {
+        log.info("Greeting using RestTemplate");
+        return restTemplate.getForEntity(PATH, Greeting.class);
     }
 
     public record GreetingOutBound(String message, String dragonWarrior) {
+    }
+
+    public record Greeting(String message) {
     }
 }
